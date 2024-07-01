@@ -6,7 +6,7 @@
 <head>
 <meta charset="EUC-KR">
 <title>Insert title here</title>
-<script src="https://unpkg.com/hangul-js" type="text/javascript"></script>
+<!-- <script src="https://unpkg.com/hangul-js" type="text/javascript"></script> -->
 <style>
   body {
       display: flex;
@@ -88,21 +88,159 @@
 
 	$(function(){
 		
-		var inputValue = '';		
+		var inputValue = '';
 
-		  
+
+	    var makeChar = function(i, m, t) {
+	        var code = ((i * 21) + m) * 28 + t + 0xAC00;
+	        return String.fromCharCode(code);
+	    }
+	    var iChrIndex = function(chr) {
+	        var index = ((chr.charCodeAt(0) - 0xAC00) / 28) / 21;
+	        return parseInt(index);
+	    }
+	    var mChrIndex = function(chr) {
+	        var index = ((chr.charCodeAt(0)- 0xAC00) / 28) % 21;
+	        return parseInt(index);
+	    }
+	    var tChrIndex = function(chr) {
+	        var index = (chr.charCodeAt(0) - 0xAC00) % 28;
+	        return parseInt(index);
+	    }
+
+	    // 초성
+	    var indexI = [
+	          'ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ',
+	          'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ',
+	          'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+
+	    // 중성
+	    var indexM = [
+	          'ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ',
+	          'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ',
+	          'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ',
+	          'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ' ];
+
+	    // 종성
+	    var indexT = [
+	          '', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ',
+	          'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ',
+	          'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+
+	    // 조합
+	    var indexJComb1 = ['ㄳ','ㄵ','ㄶ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅄ'];
+	    var indexJComb2 = ['ㄱㅅ','ㄴㅈ','ㄴㅎ','ㄹㄱ','ㄹㅁ','ㄹㅂ','ㄹㅅ','ㄹㅌ','ㄹㅍ','ㄹㅎ','ㅄ'];
+	    var indexMComb1 = ['ㅘ','ㅙ','ㅚ','ㅝ','ㅞ','ㅟ','ㅢ'];
+	    var indexMComb2 = ['ㅗㅏ','ㅗㅐ','ㅗㅣ','ㅜㅓ','ㅜㅔ','ㅜㅣ','ㅡㅣ'];
+
+	    // 호환용 한글 자모 (3130~318F)
+	    var jaCode = 'ㄱ'.charCodeAt(0);
+	    var jaCodeLast = 'ㅎ'.charCodeAt(0);
+	    var moCode = 'ㅏ'.charCodeAt(0);
+	    var moCodeLast = 'ㅣ'.charCodeAt(0);
+	    var $input = $('#input');
+	    
 		
-		$('.keyboard').on('click',
-				'.key:not(#key-tab):not(#key-left-ctrl):not(#key-right-ctrl):not(#key-left-alt):not(#key-enter)'
-				, function(){
-			
-	        var val = $(this).data('val');
-	        inputValue += val;
-	        $('#input').val(inputValue);
-	        console.log(inputValue);
-	        $('#input').focus();
-	         
-    	});
+	    $('.keyboard').on('click',
+	    	    '.key:not(#key-tab):not(#key-caps):not(#key-left-ctrl):not(#key-right-ctrl):not(#key-left-alt):not(#key-enter):not(#key-right-alt):not(#key-backspace):not(#key-left-shift):not(#key-right-shift)'
+	    	    , function(){
+	    	    
+	    	    var chr = $(this).text();
+	    	    if ($(this).attr('id') === 'key-space') {
+	    	        chr = ' ';
+	    	    }
+	    	    var text = $input.val();
+
+	    	    $input.focus();
+
+	    	    var chrCode = chr.charCodeAt(0);
+	    	    var isJa = jaCode <= chrCode && chrCode <= jaCodeLast;
+	    	    var isMo = moCode <= chrCode && chrCode <= moCodeLast;
+
+	    	    if (text) {
+	    	        var lastChr = text.substring(text.length - 1);
+	    	        var lastChrCode = lastChr.charCodeAt(0);
+	    	        if (jaCode <= lastChrCode && lastChrCode <= moCodeLast) {
+	    	            // 자음,모음
+	    	            if (jaCode <= lastChrCode && lastChrCode <= jaCodeLast) {
+	    	                if (isMo) {
+	    	                    var i = indexI.indexOf(lastChr);
+	    	                    var m = indexM.indexOf(chr);
+	    	                    var t = 0;
+	    	                    var c = makeChar(i, m, t);
+	    	                    $input.val(text.substring(0, text.length-1) + c);
+	    	                    return;
+	    	                }
+	    	            } else if (moCode <= lastChrCode && lastChrCode <= moCodeLast) {
+	    	            }
+	    	        } else if (lastChrCode >= 0xAC00 && lastChrCode <= 0xAC00 + 0x2BA4) {
+	    	            // 한글
+	    	            var i = iChrIndex(lastChr);
+	    	            var m = mChrIndex(lastChr);
+	    	            var t = tChrIndex(lastChr);
+	    	            if (t == 0) {
+	    	                // 종성이 없는경우
+	    	                if (isJa) {
+	    	                    t = indexT.indexOf(chr);
+	    	                    if (t!=-1) { // 없는 종성문자인경우 제외
+	    	                        var c = makeChar(i, m, t);
+	    	                        $input.val(text.substring(0, text.length-1) + c);
+	    	                        return;
+	    	                    }
+	    	                } else if (isMo) {
+	    	                    // 모음조합문자
+	    	                    var chkChr = indexM[m] + chr;
+	    	                    var combIndex = indexMComb2.indexOf(chkChr);
+	    	                    if (combIndex!=-1) {
+	    	                        var combChr = indexMComb1[combIndex];
+	    	                        m = indexM.indexOf(combChr);
+	    	                        var c = makeChar(i, m, t);
+	    	                        $input.val(text.substring(0, text.length-1) + c);
+	    	                        return;
+	    	                    }
+	    	                }
+	    	            } else {
+	    	                // 종성이 있는경우
+	    	                if (isMo) {
+	    	                    var tChr = indexT[t];
+
+	    	                    // 조합문자일경우 다시 쪼갠다
+	    	                    var combIndex = indexJComb1.indexOf(tChr);
+	    	                    if (combIndex!=-1) {
+	    	                        var partChr = indexJComb2[combIndex];
+	    	                        t = indexT.indexOf(partChr[0]);
+	    	                        tChr = partChr[1];
+	    	                    } else {
+	    	                        t = 0;
+	    	                    }
+
+	    	                    var c1 = makeChar(i, m, t);
+	    	                    i = indexI.indexOf(tChr);
+	    	                    if (i!=-1) {
+	    	                        m = indexM.indexOf(chr);
+	    	                        var c2 = makeChar(i, m, 0);
+	    	                        $input.val(text.substring(0, text.length-1) + c1 + c2);
+	    	                        return;
+	    	                    }
+	    	                } else if (isJa) {
+	    	                    // 자음조합문자
+	    	                    var chkChr = indexT[t] + chr;
+	    	                    var combIndex = indexJComb2.indexOf(chkChr);
+	    	                    if (combIndex!=-1) {
+	    	                        var combChr = indexJComb1[combIndex];
+	    	                        t = indexT.indexOf(combChr);
+	    	                        var c = makeChar(i, m, t);
+	    	                        $input.val(text.substring(0, text.length-1) + c);
+	    	                        return;
+	    	                    }
+	    	                }
+	    	            }
+	    	        } else {
+	    	            // 없는 문자
+	    	        }
+	    	    }
+	    	    $input.val(text + chr);
+	    	});
 		
 
 		// 리셋하기
@@ -246,7 +384,7 @@
 				console.log('isAltActive : ', isAltActive);
 				
 				if(isAltActive && !isCapsActive){
-					$(this).css('background-color', '#53d9a8'); // 활성화된 상태의 배경색
+					$(this).css('background-color', '#53d9a8');
 					$('div[data-right-alt-val]').each(function(){
 						var altValue = $(this).data('right-alt-val');
 						$(this).text(altValue);
@@ -254,7 +392,7 @@
 					});
 				
 	            } else if(isAltActive && isCapsActive){
-	            	$(this).css('background-color', '#53d9a8'); // 활성화된 상태의 배경색
+	            	$(this).css('background-color', '#53d9a8');
 					$('div[data-right-alt-cap]').each(function(){
 						var capAltValue = $(this).data('right-alt-cap');
 						$(this).text(capAltValue);
@@ -276,29 +414,57 @@
 	                isAltActive = false;
 	            }	
 		});
-					
-		//삭제
-		$('#key-backspace').on('click', function(){
-			
-		  var val = $('#input').val();
-		  
-		  var lastChar = val.charAt(val.length - 1);
-		  
-		  if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(lastChar)) {
-	            var disassembled = disassembleHangul(lastChar);
-	            disassembled.pop();
+		
+		// 한글분해
+		function disassembleHangul(chr) {
+		    var result = [];
+		    var chrCode = chr.charCodeAt(0);
+		    
+		    if (chrCode < 0xAC00 || chrCode > 0xD7A3) {
+		        return chr; // 한글이 아닌 경우
+		    }
+		    
+		    var i = iChrIndex(chr);
+		    var m = mChrIndex(chr);
+		    var t = tChrIndex(chr);
+		    
+		    result.push(indexI[i], indexM[m]);
+		    
+		    if (t !== 0) {
+		        result.push(indexT[t]);
+		    }
+		    
+		    return result;
+		}
 
-	            var updatedChar = disassembled.length > 0 ? Hangul.assemble(disassembled) : '';
-	            var updatedVal = val.slice(0, -1) + updatedChar;
-
-	            $('#input').val(updatedVal);
-	            inputValue = updatedVal;
-	        } else {
-	            var updatedVal = val.slice(0, -1);
-	            $('#input').val(updatedVal);
-	            inputValue = updatedVal;
-	        }
+		// 한글조합
+		function assembleHangul(chosung, jungsung, jongsung) {
+		    var i = indexI.indexOf(chosung);
+		    var m = indexM.indexOf(jungsung);
+		    var t = indexT.indexOf(jongsung);
+		    
+		    if (i === -1 || m === -1) return chosung + jungsung;
+		    return makeChar(i, m, t !== -1 ? t : 0);
+		}
+		
+		// 삭제
+		$('#key-backspace').on('click', function() {
+		    var val = $('#input').val();
+		    var lastChar = val.charAt(val.length - 1);
+		    var updatedVal = val.slice(0, -1);
 			
+		    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(lastChar)) {
+		        var disassembled = disassembleHangul(lastChar);
+		        
+		        if (disassembled.length > 1) {
+		            disassembled.pop();
+		            var updatedChar = disassembled.length > 1 ? assembleHangul(disassembled[0], disassembled[1], disassembled[2] || '') : disassembled[0];
+		            updatedVal = val.slice(0, -1) + updatedChar;
+		        }
+		    }
+
+		    $('#input').val(updatedVal);
+		    inputValue = updatedVal;
 		});
 		
 		
@@ -309,7 +475,7 @@
 <body>
 
 	<div class="input-container">
-        <input type="text" id="input" readonly>
+        <input type="text" id="input" value="" readonly>
         <button id="reset">Reset</button>
     </div>
 	
@@ -375,7 +541,7 @@
         <div class="key wide" id="key-right-shift" data-val="">Shift</div>
         <div class="key" id="key-left-ctrl" data-val="" >Ctrl</div>
         <div class="key" id="key-left-alt" data-val="" >Alt</div>
-        <div class="key wide" id="key-space" data-val=" " style="grid-column: span 10;">Space</div>
+        <div class="key wide" id="key-space" data-val=" " data-oval=" " style="grid-column: span 10;">Space</div>
         <div class="key" id="key-right-alt" data-val="" >Alt</div>
         <div class="key" id="key-right-ctrl" data-val="" >Ctrl</div>
     </div>
