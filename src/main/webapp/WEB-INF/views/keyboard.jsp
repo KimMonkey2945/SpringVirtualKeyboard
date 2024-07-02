@@ -140,106 +140,115 @@
 	    var moCodeLast = 'ㅣ'.charCodeAt(0);
 	    var $input = $('#input');
 	    
-		
+		var isAltActive = false;
 	    $('.keyboard').on('click',
 	    	    '.key:not(#key-tab):not(#key-caps):not(#key-left-ctrl):not(#key-right-ctrl):not(#key-left-alt):not(#key-enter):not(#key-right-alt):not(#key-backspace):not(#key-left-shift):not(#key-right-shift)'
 	    	    , function(){
-	    	    
-	    	    var chr = $(this).text();
-	    	    if ($(this).attr('id') === 'key-space') {
-	    	        chr = ' ';
-	    	    }
-	    	    var text = $input.val();
-
-	    	    $input.focus();
-
-	    	    var chrCode = chr.charCodeAt(0);
-	    	    var isJa = jaCode <= chrCode && chrCode <= jaCodeLast;
-	    	    var isMo = moCode <= chrCode && chrCode <= moCodeLast;
-
-	    	    if (text) {
-	    	        var lastChr = text.substring(text.length - 1);
-	    	        var lastChrCode = lastChr.charCodeAt(0);
-	    	        if (jaCode <= lastChrCode && lastChrCode <= moCodeLast) {
-	    	            // 자음,모음
-	    	            if (jaCode <= lastChrCode && lastChrCode <= jaCodeLast) {
-	    	                if (isMo) {
-	    	                    var i = indexI.indexOf(lastChr);
-	    	                    var m = indexM.indexOf(chr);
-	    	                    var t = 0;
-	    	                    var c = makeChar(i, m, t);
-	    	                    $input.val(text.substring(0, text.length-1) + c);
-	    	                    return;
-	    	                }
-	    	            } else if (moCode <= lastChrCode && lastChrCode <= moCodeLast) {
-	    	            }
-	    	        } else if (lastChrCode >= 0xAC00 && lastChrCode <= 0xAC00 + 0x2BA4) {
-	    	            // 한글
-	    	            var i = iChrIndex(lastChr);
-	    	            var m = mChrIndex(lastChr);
-	    	            var t = tChrIndex(lastChr);
-	    	            if (t == 0) {
-	    	                // 종성이 없는경우
-	    	                if (isJa) {
-	    	                    t = indexT.indexOf(chr);
-	    	                    if (t!=-1) { // 없는 종성문자인경우 제외
-	    	                        var c = makeChar(i, m, t);
-	    	                        $input.val(text.substring(0, text.length-1) + c);
-	    	                        return;
-	    	                    }
-	    	                } else if (isMo) {
-	    	                    // 모음조합문자
-	    	                    var chkChr = indexM[m] + chr;
-	    	                    var combIndex = indexMComb2.indexOf(chkChr);
-	    	                    if (combIndex!=-1) {
-	    	                        var combChr = indexMComb1[combIndex];
-	    	                        m = indexM.indexOf(combChr);
-	    	                        var c = makeChar(i, m, t);
-	    	                        $input.val(text.substring(0, text.length-1) + c);
-	    	                        return;
-	    	                    }
-	    	                }
-	    	            } else {
-	    	                // 종성이 있는경우
-	    	                if (isMo) {
-	    	                    var tChr = indexT[t];
-
-	    	                    // 조합문자일경우 다시 쪼갠다
-	    	                    var combIndex = indexJComb1.indexOf(tChr);
-	    	                    if (combIndex!=-1) {
-	    	                        var partChr = indexJComb2[combIndex];
-	    	                        t = indexT.indexOf(partChr[0]);
-	    	                        tChr = partChr[1];
-	    	                    } else {
-	    	                        t = 0;
-	    	                    }
-
-	    	                    var c1 = makeChar(i, m, t);
-	    	                    i = indexI.indexOf(tChr);
-	    	                    if (i!=-1) {
-	    	                        m = indexM.indexOf(chr);
-	    	                        var c2 = makeChar(i, m, 0);
-	    	                        $input.val(text.substring(0, text.length-1) + c1 + c2);
-	    	                        return;
-	    	                    }
-	    	                } else if (isJa) {
-	    	                    // 자음조합문자
-	    	                    var chkChr = indexT[t] + chr;
-	    	                    var combIndex = indexJComb2.indexOf(chkChr);
-	    	                    if (combIndex!=-1) {
-	    	                        var combChr = indexJComb1[combIndex];
-	    	                        t = indexT.indexOf(combChr);
-	    	                        var c = makeChar(i, m, t);
-	    	                        $input.val(text.substring(0, text.length-1) + c);
-	    	                        return;
-	    	                    }
-	    	                }
-	    	            }
-	    	        } else {
-	    	            // 없는 문자
-	    	        }
-	    	    }
-	    	    $input.val(text + chr);
+	    	    	
+	    	    inputValue += $(this).data('val');
+	    	    	
+	    		if(isAltActive){	  
+		    	    var chr = $(this).text();
+		    	    if ($(this).attr('id') === 'key-space') {
+		    	        chr = ' ';
+		    	    }
+		    	    var text = $input.val();
+	
+		    	    $input.focus();
+	
+		    	    var chrCode = chr.charCodeAt(0);
+		    	    var isJa = jaCode <= chrCode && chrCode <= jaCodeLast;
+		    	    var isMo = moCode <= chrCode && chrCode <= moCodeLast;
+	
+		    	    if (text) {
+		    	        var lastChr = text.substring(text.length - 1);
+		    	        var lastChrCode = lastChr.charCodeAt(0);
+		    	        if (jaCode <= lastChrCode && lastChrCode <= moCodeLast) {
+		    	            // 자음,모음
+		    	            if (jaCode <= lastChrCode && lastChrCode <= jaCodeLast) {
+		    	                if (isMo) {
+		    	                    var i = indexI.indexOf(lastChr);
+		    	                    var m = indexM.indexOf(chr);
+		    	                    var t = 0;
+		    	                    var c = makeChar(i, m, t);
+		    	                    $input.val(text.substring(0, text.length-1) + c);
+		    	                    return;
+		    	                }
+		    	            } else if (moCode <= lastChrCode && lastChrCode <= moCodeLast) {
+		    	            }
+		    	        } else if (lastChrCode >= 0xAC00 && lastChrCode <= 0xAC00 + 0x2BA4) {
+		    	            // 한글
+		    	            var i = iChrIndex(lastChr);
+		    	            var m = mChrIndex(lastChr);
+		    	            var t = tChrIndex(lastChr);
+		    	            if (t == 0) {
+		    	                // 종성이 없는경우
+		    	                if (isJa) {
+		    	                    t = indexT.indexOf(chr);
+		    	                    if (t!=-1) { // 없는 종성문자인경우 제외
+		    	                        var c = makeChar(i, m, t);
+		    	                        $input.val(text.substring(0, text.length-1) + c);
+		    	                        return;
+		    	                    }
+		    	                } else if (isMo) {
+		    	                    // 모음조합문자
+		    	                    var chkChr = indexM[m] + chr;
+		    	                    var combIndex = indexMComb2.indexOf(chkChr);
+		    	                    if (combIndex!=-1) {
+		    	                        var combChr = indexMComb1[combIndex];
+		    	                        m = indexM.indexOf(combChr);
+		    	                        var c = makeChar(i, m, t);
+		    	                        $input.val(text.substring(0, text.length-1) + c);
+		    	                        return;
+		    	                    }
+		    	                }
+		    	            } else {
+		    	                // 종성이 있는경우
+		    	                if (isMo) {
+		    	                    var tChr = indexT[t];
+	
+		    	                    // 조합문자일경우 다시 쪼갠다
+		    	                    var combIndex = indexJComb1.indexOf(tChr);
+		    	                    if (combIndex!=-1) {
+		    	                        var partChr = indexJComb2[combIndex];
+		    	                        t = indexT.indexOf(partChr[0]);
+		    	                        tChr = partChr[1];
+		    	                    } else {
+		    	                        t = 0;
+		    	                    }
+	
+		    	                    var c1 = makeChar(i, m, t);
+		    	                    i = indexI.indexOf(tChr);
+		    	                    if (i!=-1) {
+		    	                        m = indexM.indexOf(chr);
+		    	                        var c2 = makeChar(i, m, 0);
+		    	                        $input.val(text.substring(0, text.length-1) + c1 + c2);
+		    	                        return;
+		    	                    }
+		    	                } else if (isJa) {
+		    	                    // 자음조합문자
+		    	                    var chkChr = indexT[t] + chr;
+		    	                    var combIndex = indexJComb2.indexOf(chkChr);
+		    	                    if (combIndex!=-1) {
+		    	                        var combChr = indexJComb1[combIndex];
+		    	                        t = indexT.indexOf(combChr);
+		    	                        var c = makeChar(i, m, t);
+		    	                        $input.val(text.substring(0, text.length-1) + c);
+		    	                        return;
+		    	                    }
+		    	                }
+		    	            }
+		    	        }
+		    	    }
+		    	    $input.val(text + chr);
+	    		} else if(!isAltActive){
+	    			 $('div[data-oval]').each(function(){
+	 					var originValue = $(this).data('oval');	
+	 					$(this).data('val', originValue);
+	 					console.log('else if inputValue : ', inputValue);	
+	 					$input.val(inputValue);
+	 				});
+	    		}
 	    	});
 		
 
@@ -247,7 +256,6 @@
 		$('#reset').on('click', function(){
 			$('#input').val('');
 			inputValue = '';
-			values = [];
 		});
 		
 		// 대소문자
@@ -376,7 +384,6 @@
 		});
 		
 		//한영 변환
-		var isAltActive = false;
 		$(document).on('click', '#key-right-alt' ,function(){
 				isAltActive = !isAltActive;
 				
