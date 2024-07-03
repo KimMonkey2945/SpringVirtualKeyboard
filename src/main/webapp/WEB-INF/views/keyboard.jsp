@@ -139,12 +139,36 @@
 	    var moCode = 'ㅏ'.charCodeAt(0);
 	    var moCodeLast = 'ㅣ'.charCodeAt(0);
 	    var $input = $('#input');
+		var compVal = '';
+		var lastPosition = '';
+	    
+		// 정확한 input의 길이를 계산하기 위해 사용
+	    function calculateUTF8StringLength(str) {
+	        let length = 0;
+	        for (let i = 0; i < str.length; i++) {
+	            const codePoint = str.codePointAt(i);
+	            if (codePoint >= 0 && codePoint <= 127) {
+	                // 1바이트 문자 (ASCII)
+	                length++;
+	            } else if (codePoint >= 128 && codePoint <= 2047) {
+	                // 2바이트 문자
+	                length += 2;
+	            } else if (codePoint >= 2048 && codePoint <= 65535) {
+	                // 3바이트 문자
+	                length += 3;
+	            } else if (codePoint >= 65536 && codePoint <= 1114111) {
+	                // 4바이트 문자
+	                length += 4;
+	            }
+	        }
+	        return length;
+	    }
 	    
 		var isAltActive = false;
 	    $('.keyboard').on('click',
 	    	    '.key:not(#key-tab):not(#key-caps):not(#key-left-ctrl):not(#key-right-ctrl):not(#key-left-alt):not(#key-enter):not(#key-right-alt):not(#key-backspace):not(#key-left-shift):not(#key-right-shift)'
 	    	    , function(){
-	    	    	
+	    	    
 	    	    inputValue += $(this).data('val');
 	    	    	
 	    		if(isAltActive){	  
@@ -172,10 +196,11 @@
 		    	                    var t = 0;
 		    	                    var c = makeChar(i, m, t);
 		    	                    $input.val(text.substring(0, text.length-1) + c);
+		    	    	    		compVal = $input.val().charAt($input.val().length - 1);
+// 		    	    	    	    console.log('compVal' ,compVal);
 		    	                    return;
 		    	                }
-		    	            } else if (moCode <= lastChrCode && lastChrCode <= moCodeLast) {
-		    	            }
+		    	            } 
 		    	        } else if (lastChrCode >= 0xAC00 && lastChrCode <= 0xAC00 + 0x2BA4) {
 		    	            // 한글
 		    	            var i = iChrIndex(lastChr);
@@ -188,6 +213,8 @@
 		    	                    if (t!=-1) { // 없는 종성문자인경우 제외
 		    	                        var c = makeChar(i, m, t);
 		    	                        $input.val(text.substring(0, text.length-1) + c);
+		    	        	    		compVal = $input.val().charAt($input.val().length - 1);
+// 		    	        	    	    console.log('compVal' ,compVal);
 		    	                        return;
 		    	                    }
 		    	                } else if (isMo) {
@@ -199,7 +226,10 @@
 		    	                        m = indexM.indexOf(combChr);
 		    	                        var c = makeChar(i, m, t);
 		    	                        $input.val(text.substring(0, text.length-1) + c);
+		    	        	    		compVal = $input.val().charAt($input.val().length - 1);
+// 		    	        	    	    console.log('compVal' ,compVal);
 		    	                        return;
+		    	                        
 		    	                    }
 		    	                }
 		    	            } else {
@@ -223,6 +253,8 @@
 		    	                        m = indexM.indexOf(chr);
 		    	                        var c2 = makeChar(i, m, 0);
 		    	                        $input.val(text.substring(0, text.length-1) + c1 + c2);
+		    	        	    		compVal = $input.val().charAt($input.val().length - 1);
+// 		    	        	    	    console.log('compVal' ,compVal);
 		    	                        return;
 		    	                    }
 		    	                } else if (isJa) {
@@ -234,6 +266,8 @@
 		    	                        t = indexT.indexOf(combChr);
 		    	                        var c = makeChar(i, m, t);
 		    	                        $input.val(text.substring(0, text.length-1) + c);
+		    	        	    		compVal = $input.val().charAt($input.val().length - 1);
+// 		    	        	    	    console.log('compVal' ,compVal);
 		    	                        return;
 		    	                    }
 		    	                }
@@ -242,15 +276,18 @@
 		    	    }
 		    	    $input.val(text + chr);
 	    		} else if(!isAltActive){
-	    			 $('div[data-oval]').each(function(){
-	 					var originValue = $(this).data('oval');	
-	 					$(this).data('val', originValue);
-	 					console.log('else if inputValue : ', inputValue);	
-	 					$input.val(inputValue);
+	    			$('div[data-oval]').each(function(){
+	 				  var originValue = $(this).data('oval');	
+	 				  $(this).data('val', originValue);
+	 				  console.log('else if inputValue : ', inputValue);	
+	 				  $input.val(inputValue);
 	 				});
 	    		}
+	    		
+			    lastPosition = $input.val().charAt($input.val().length - 1);
+	    	   
 	    	});
-		
+
 
 		// 리셋하기
 		$('#reset').on('click', function(){
@@ -456,22 +493,49 @@
 		
 		// 삭제
 		$('#key-backspace').on('click', function() {
-		    var val = $('#input').val();
+		    var val = $input.val();
 		    var lastChar = val.charAt(val.length - 1);
-		    var updatedVal = val.slice(0, -1);
-			
-		    if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(lastChar)) {
-		        var disassembled = disassembleHangul(lastChar);
-		        
-		        if (disassembled.length > 1) {
-		            disassembled.pop();
-		            var updatedChar = disassembled.length > 1 ? assembleHangul(disassembled[0], disassembled[1], disassembled[2] || '') : disassembled[0];
-		            updatedVal = val.slice(0, -1) + updatedChar;
-		        }
-		    }
 
-		    $('#input').val(updatedVal);
-		    inputValue = updatedVal;
+		    console.log('lastChar : ', lastChar);    
+		    console.log('compVal : ', compVal);
+		  
+		    var updatedVal = val.slice(0, -1);		    
+			var disassembled = disassembleHangul(compVal);
+			
+			if(/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(lastPosition)){
+				if (/[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(compVal) || !disassembled.length > 1) {
+					
+			        console.log('처음 받아온 disassembled : ', disassembled);
+			   
+			        if (disassembled.length > 1) {
+			        	console.log('초중종');
+			            disassembled.pop();
+			            var updatedChar = disassembled.length > 1 ? assembleHangul(disassembled[0], disassembled[1], disassembled[2] || '') : disassembled[0];
+			            console.log('updateChar : ', updatedChar);
+			            updatedVal = val.slice(0, -1) + updatedChar;
+				        console.log('disassembled 3의 : ', disassembled);
+				     	compVal = updatedChar;
+				        
+			        } 
+//	 		        else if (disassembled.length >= 2) {
+//	 		        	console.log('초중');
+//	 		        	disassembled.pop();
+//	 		            var updatedChar = disassembled.length > 1 ? assembleHangul(disassembled[0], disassembled[1] || '') : disassembled[0];
+//	 		            console.log('updateChar : ', updatedChar);
+//	 		            updatedVal = val.slice(0, -1) + updatedChar;
+//	 			        console.log('disassembled 2의 : ', disassembled);
+//	 		        }
+			    	
+				    $('#input').val(updatedVal);
+				    inputValue = updatedVal;
+			    }
+			}else{
+		    	console.log('inputValue : ', inputValue);
+		    	$('#input').val(updatedVal);
+		    	inputValue = updatedVal;
+		    }  
+		    
+
 		});
 		
 		
